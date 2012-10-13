@@ -1,0 +1,46 @@
+#!/bin/sh
+#split the original command to determin the command and arguments
+LOGFILE=~/gitosis-serve.log 
+
+log(){
+    message="$@"
+    #echo $message
+    #echo $message >> $LOGFILE
+}
+
+log "$1 $2 $3"
+#note the original username as passed through from authorized_keys
+user="$1"
+
+#determine the original command
+#this breaks SSH_ORIGINAL_COMMAND into $1, $2, $3
+set -- $SSH_ORIGINAL_COMMAND
+
+log "$1 $2"
+
+case "$1" in	
+	forklift)
+		#forklift specific action
+		#log "forklift"
+		exec $SSH_ORIGINAL_COMMAND;
+		;;
+	
+	git-receive-pack)
+		#get forklift to bind to the post-receive event
+		repo=`echo $2 | sed -s "s/^\([\"']\)\(.*\)\1\$/\2/g"`
+		
+		if [ $repo != "gitosis-admin.git" ]
+			then
+			`exec forklift bind "$repo"`
+		fi
+
+		#not going to stop
+		exec _gitosis-serve "$user"
+		;; 
+	*)
+		#let gitosis handle it as it would have before
+		#exit 1
+		exec _gitosis-serve "$user"
+		;;
+esac
+

@@ -1,0 +1,62 @@
+#!/bin/sh
+
+repo="$1"
+app="$2"
+dirAllRepos="$3"
+dirAllApps="$4"
+dirRepo="$dirAllRepos$repo"
+dirApp="$dirAllApps$app"
+pathApp="$dirApp/app.js"
+pathAppNpmPackage="$dirApp/package.json"
+#DUE TO ODD BUG WITH GIT HOOKS - NEED TO SET GIT_DIR TO ".git"
+GIT_DIR=".git"
+
+#STOP THE APP
+echo "Stopping app $app..."
+forever stop $pathApp 2>/dev/null&
+wait
+
+
+if [ -e $dirApp ]
+then
+	#CHECKOUT THE LATEST VERSION OF THE APP
+	echo "Checking out '$repo' into '$app'..."
+	cd $dirApp
+	gitCurrentRevision=`git rev-parse HEAD`
+	echo "current repo $gitCurrentRevision" 
+	git reset --hard&
+	wait
+	git pull origin&
+	wait
+else
+	#NEW REPO
+	echo $pwd
+	echo "Creating new repo '$repo' at '$app'..."
+	cd $dirAllApps
+	echo "Cloning repo $dirRepo..."
+	git clone $dirRepo&
+	wait
+	#chmod on the new dir
+	chmod -R u+w $dirApp&
+	cd $dirApp
+fi
+
+echo "Checking existance of $pathAppNpmPackage..."
+if [ -e "$pathAppNpmPackage" ]
+then
+	echo "Installing modules..."
+	
+	#if [ -e "$dirApp/node_modules" ]
+	#then
+	#	rm -R -f $dirApp/node_modules
+	#fi
+
+	npm install -d -s&
+	wait
+fi
+
+echo "Restarting app..."
+forever start $pathApp&
+wait
+
+echo "Success!"

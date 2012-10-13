@@ -1,0 +1,8 @@
+#!/bin/sh
+repo="$1"
+app="$2"
+dirRepo="$3"
+dirApps="$4"
+
+echo "Receiving package for app $app..."
+

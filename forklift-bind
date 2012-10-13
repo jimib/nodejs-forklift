@@ -1,0 +1,73 @@
+#!/usr/local/bin/node
+var util = require("util");
+var fs = require("fs");
+
+/*
+OPEN UP THE REPOSITORIES PRE-RECEIVE AND POST-RECEIVE FILES AND CHECK THE BINDERS ARE IN PLACE
+*/
+
+var repo = process.argv[2];
+var dirRepo = "/home/git/repositories/"+repo;
+
+//check the repo exists first by pulling it's stats
+fs.stat(dirRepo, function(err, stats){
+	if(err || !stats.isDirectory()){
+		//console.log("repo '"+dirRepo+"' not found");
+		return;
+	}
+
+	var dirRepoHooks = dirRepo + "/hooks/";
+	var pathPostReceive = dirRepoHooks + 'post-receive';
+	var pathPreReceive = dirRepoHooks + 'pre-receive';
+ 
+	function stripForkLiftCommands(contents, cb){
+		//remove all forklift commands
+		var output = "";
+		//console.log("contents: ",contents);
+		var lines = contents ? contents.split("\n") : [];
+	
+		lines.forEach(function(line){
+			//console.log("line: ", line);
+			if(line.indexOf("forklift ") == 0){
+				//remove it by ignoring it
+				
+			}else{
+				output += line + "\n";
+			}
+		});
+
+		return output;
+	}
+
+	//read the files
+	var filePostReceive, filePreReceive;
+	
+	//try opening the files
+	try{
+		filePostReceive = fs.readFileSync(pathPostReceive).toString();
+	}catch(err){
+	//	console.log(err);
+	}
+	
+	try{
+		filePreReceive = fs.readFileSync(pathPreReceive).toString();
+	}catch(err){
+	//	console.log(err);
+	}
+
+	//strip the files of previous forklift commands
+	filePostReceive = stripForkLiftCommands(filePostReceive || "");
+	filePreReceive = stripForkLiftCommands(filePreReceive || "");
+
+
+	//add our pre and post scripts back
+	filePostReceive += "forklift post-receive "+repo;
+	filePreReceive += "forklift pre-receive "+repo;
+	
+	//re-write the files
+	fs.writeFileSync(pathPostReceive, filePostReceive);
+	fs.writeFileSync(pathPreReceive, filePreReceive);
+	
+	fs.chmodSync(pathPostReceive, "755");
+	fs.chmodSync(pathPreReceive, "755");
+});

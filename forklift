@@ -1,0 +1,63 @@
+#!/usr/local/bin/node
+var method = process.argv.length > 2 ? process.argv[2] : null;
+var args = process.argv.length > 3 ? process.argv.slice(3) : null; 
+
+var dirRepo = "/home/git/repositories/";
+var dirApps = "/home/git/apps/"
+
+var exec = require('child_process').exec;
+
+//console.log("method:",method);
+//console.log("args:",args);
+
+function call(method, args, boolOutput){
+	var command = "";
+	if(args){
+		args.forEach(function(arg){
+			command += " '" + arg + "'";
+		});
+	}
+
+	command = method + command;
+	
+	//console.log("call: ",command);
+
+	exec(command, function(err, stdout, stderr){
+		if(boolOutput){
+			if(stdout)console.log(stdout);
+			if(stderr)console.log(stderr);
+		}
+	});
+}
+
+switch(method){
+	case "bind":
+		call("forklift-"+method, args, false);
+	break;
+
+	case "list":
+		call("forever",["list"],true);
+	break;
+	
+	case "stop":
+	case "start":
+	case "restart":
+		var app = args[0];
+		call("forever",[method, dirApps+app+"/app.js"],true);
+	break;
+
+	case "pre-receive":
+	case "post-receive":
+		//repo?
+		var repo = args[0];
+		var app = repo.split(".git").join(""); 
+		
+		//bind to the repositories pre-receive post-receive
+		call("forklift-"+method, [repo, app, dirRepo, dirApps], true);
+	break;
+
+	default:
+		console.log("Unhandled: forklift-"+method, args);
+	break;
+}
+

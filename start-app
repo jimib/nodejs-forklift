@@ -1,0 +1,23 @@
+#!/usr/local/bin/node
+var path = require("path");
+var exec = require("child_process").exec;
+
+var appDir = process.argv.length ? process.argv[process.argv.length - 1] : null;
+var appPath = path.join(appDir, "app.js");
+var version = "0.6.12"
+
+try{
+        var packagePath = appDir + "package.json";
+        var jsonPackage = require(packagePath);
+
+        version = jsonPackage.nodeVersion || version;
+
+}catch(err){
+        //console.log(err);
+}
+
+//run:
+var command = "forever";
+command += " start -c 'n use "+version+"' --sourceDir "+appDir+" app.js";
+console.log(command);
+exec(command);

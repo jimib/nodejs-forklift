@@ -56,7 +56,9 @@ then
 fi
 
 echo "Restarting app..."
-forever start $pathApp&
+#forever start $pathApp&
+start-app $dirApp/
+
 wait
 
 echo "Success!"
